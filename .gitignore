@@ -1,0 +1,4 @@
+# Build artifacts
+*.so
+*.o
+*.ptx
