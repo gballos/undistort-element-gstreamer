@@ -10,7 +10,7 @@ NVCC      ?= $(CUDA_HOME)/bin/nvcc
 ARCH      ?= sm_87
 HEADER    := include/customer_functions.h
 
-libnvundistort.so: nvundistort.cu undistort_kernels.cuh $(HEADER)
+libnvundistort.so: nvundistort.cu undistort_kernels.cuh undistort_params.h $(HEADER)
 	$(NVCC) -O3 -arch=$(ARCH) -shared -Xcompiler -fPIC -Iinclude $< -o $@
 
 $(HEADER):
