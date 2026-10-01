@@ -10,6 +10,9 @@ that share the same maths and kernels (`undistort_kernels.cuh`) and the same
 - **The `nvivafilter` library** (`libnvundistort.so`), described first below.
   It is what `pipeline/builder.py` uses today.
 
+[DATAFLOW.md](DATAFLOW.md) shows both pipelines and the inside of the element
+as diagrams.
+
 ## The nvivafilter library
 
 `libnvundistort.so` is a plug-in library for NVIDIA's `nvivafilter` GStreamer element.
