@@ -249,7 +249,7 @@ static void gst_nvundistort_class_init(GstNvUndistortClass* klass) {
   g_object_class_install_property(
       gobject_class, PROP_PARAMS_FILE,
       g_param_spec_string("params-file", "Parameter file",
-                          "Parameter file written by utils/undistort_params.py (read at start)",
+                          "Parameter file written by tools/undistort_params.py (read at start)",
                           NULL, (GParamFlags)(G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS)));
   g_object_class_install_property(
       gobject_class, PROP_STATS_INTERVAL,
@@ -259,7 +259,7 @@ static void gst_nvundistort_class_init(GstNvUndistortClass* klass) {
 
   gst_element_class_set_static_metadata(element_class, "Lens undistortion", "Filter/Effect/Video",
                                         "Undistorts NVMM frames on the GPU (OpenCV rational + "
-                                        "tangential model)", "edge-inference");
+                                        "tangential model)", "Giorgos Ballos");
   gst_element_class_add_static_pad_template(element_class, &sink_template);
   gst_element_class_add_static_pad_template(element_class, &src_template);
 
@@ -281,5 +281,5 @@ static gboolean plugin_init(GstPlugin* plugin) {
 
 #define PACKAGE "nvundistort"
 GST_PLUGIN_DEFINE(GST_VERSION_MAJOR, GST_VERSION_MINOR, nvundistort,
-                  "Lens undistortion of NVMM frames on the GPU", plugin_init, "1.0", "Proprietary",
-                  "edge-inference", "unknown")
+                  "Lens undistortion of NVMM frames on the GPU", plugin_init, "1.0", "MIT/X11",
+                  "nvundistort", "https://github.com/gballos/undistort-element-gstreamer")

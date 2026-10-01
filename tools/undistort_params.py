@@ -1,15 +1,16 @@
-"""Parameter file for native/nvundistort (libnvundistort.so).
+"""Parameter file for nvundistort (the element and the nvivafilter library).
 
-The library evaluates OpenCV's initUndistortRectifyMap model per pixel on the
-GPU, so all it needs is the input camera matrix K, the distortion coefficients,
-and the output camera matrix new_K. new_K comes from
+The kernels evaluate OpenCV's initUndistortRectifyMap model per pixel on the
+GPU, so all they need is the input camera matrix K, the distortion
+coefficients, and the output camera matrix new_K. new_K comes from
 cv2.getOptimalNewCameraMatrix(alpha) and is computed here, once.
 
-    python3 -m utils.undistort_params imx708_intrinsics.npz --alpha 0.0
+    python3 tools/undistort_params.py calibration/imx708_intrinsics.npz --alpha 0.0
 
-The .npz is a utils/calibration/calibrate.py result (camera_matrix,
-dist_coeffs, image_size, model). The frame the library sees must be exactly
-the frame the calibration was shot on -- same resolution AND orientation.
+The .npz holds an OpenCV calibration: camera_matrix (3x3), dist_coeffs (up to
+14, OpenCV order), image_size (width, height) and optionally model ("fisheye"
+is refused). The frames to undistort must be exactly the frames the
+calibration was shot on -- same resolution AND orientation.
 """
 
 import argparse
@@ -22,7 +23,7 @@ _KEYS = ("k1", "k2", "p1", "p2", "k3", "k4", "k5", "k6")
 
 
 def load_intrinsics(npz_path, alpha=0.0):
-    """(K, dist8, new_K, (w, h)) for the library's model, validated.
+    """(K, dist8, new_K, (w, h)) for the kernels' model, validated.
 
     Raises for what the kernel cannot represent rather than approximating it:
     the fisheye model, camera-matrix skew, and the thin-prism/tilt terms
@@ -56,8 +57,7 @@ def write_params(npz_path, alpha=0.0, out=None):
             ("new_fx", new_K[0, 0]), ("new_fy", new_K[1, 1]),
             ("new_cx", new_K[0, 2]), ("new_cy", new_K[1, 2]),
             *zip(_KEYS, d8)]
-    out.write_text(f"# nvundistort params from {npz_path.name}, alpha={alpha}. "
-                   "Regenerated on every pipeline build.\n"
+    out.write_text(f"# nvundistort params from {npz_path.name}, alpha={alpha}.\n"
                    + "".join(f"{k} {float(v)!r}\n" for k, v in rows))
     return str(out)
 

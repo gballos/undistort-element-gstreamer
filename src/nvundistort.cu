@@ -13,7 +13,7 @@
 // nvivafilter wrapper around them.
 //
 // Environment (read once, in init()):
-//   NVUNDISTORT_PARAMS  parameter file written by utils/undistort_params.py (required)
+//   NVUNDISTORT_PARAMS  parameter file written by tools/undistort_params.py (required)
 //   NVUNDISTORT_MODE    off | map | y | full (default full). Bring-up aids:
 //                         off  -- return immediately (measures nvivafilter alone)
 //                         map  -- map/unmap the surface only (measures EGL interop)

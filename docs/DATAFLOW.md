@@ -5,7 +5,7 @@ without the `nvundistort` element, and what happens inside the element.
 
 Times are the median each element holds a frame (GStreamer latency tracer) on
 the Jetson Orin Nano at 4608×2592 / 14 fps, default clocks, a saved frame
-looped. See [ELEMENT_PLAN.md](ELEMENT_PLAN.md) for how they were taken.
+looped. See [DESIGN.md](DESIGN.md) for how they were taken.
 
 ## The pipeline, before and after
 
@@ -20,22 +20,22 @@ flowchart TB
     A0["tcpclientsrc<br/>jpegparse"] -->|"JPEG"| A1["nvv4l2decoder<br/>19.6 ms"]
     A1 -->|"I420<br/>full range"| A2["nvvidconv<br/>21.3 ms"]
     A2 -->|"NV12"| A3["nvivafilter<br/>libnvundistort.so<br/>22.7 ms"]
-    A3 -->|"NV12<br/>16-235"| A4(["tee"])
+    A3 -->|"NV12<br/>16-235"| A4(["downstream"])
   end
 
   subgraph element["With the nvundistort element: 26.2 ms"]
     direction LR
     B0["tcpclientsrc<br/>jpegparse"] -->|"JPEG"| B1["nvv4l2decoder<br/>19.9 ms"]
     B1 -->|"I420<br/>full range"| B2["nvundistort<br/>6.3 ms"]
-    B2 -->|"NV12<br/>full range"| B3(["tee"])
+    B2 -->|"NV12<br/>full range"| B3(["downstream"])
   end
 
   today ~~~ element
 ```
 
-After the tee nothing changes: the detection branch (`nvstreammux` 960×544 →
-PeopleNet → NVDCF) and the gaze branch (RGBA in system memory → appsink) both
-receive the undistorted NV12 frame, so they share one geometry.
+Whatever follows (a `tee`, `nvstreammux`, an encoder, a converter) receives
+an ordinary pitch-linear NV12 frame. Undistorting before a `tee` gives every
+branch the same geometry.
 
 ## Inside the element, per frame
 
@@ -59,7 +59,7 @@ flowchart TD
   POOL["Output pool<br/>4 to 8 NVMM buffers, NV12"] -->|"output buffer<br/>mapped once, kept"| OUT
   KY -->|"Y plane"| OUT["Undistorted NV12 frame"]
   KUV -->|"interleaved UV plane"| OUT
-  OUT --> DOWN(["downstream: caps filter, tee"])
+  OUT --> DOWN(["downstream"])
 
   DEC -.->|"only if undistortion is disabled:<br/>plain I420 to NV12 conversion"| OUT
 ```

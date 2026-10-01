@@ -1,15 +1,15 @@
-"""Accuracy check for native/nvundistort ON THE JETSON: runs one JPEG through
-the undistortion and compares the result with cv2.remap.
+"""Accuracy check for nvundistort ON THE JETSON: runs one JPEG through the
+undistortion and compares the result with cv2.remap.
 
-    cd tests && python3 check_undistort.py frame.jpg --npz ../imx708_intrinsics.npz            # nvivafilter library
-    cd tests && python3 check_undistort.py frame.jpg --npz ../imx708_intrinsics.npz --element  # nvundistort element
+    python3 tools/check_undistort.py frame.jpg --npz calibration/imx708_intrinsics.npz --element  # nvundistort element
+    python3 tools/check_undistort.py frame.jpg --npz calibration/imx708_intrinsics.npz            # nvivafilter library
 
 For the library, the reference input is the same chain with the library in
 mode=off, so any difference is the library's alone. For the element it is the
 plain decode: the element must not alter a frame beyond undistorting it.
 PASS = mean abs difference below 1 level on every plane.
-Use a frame shot at the calibrated resolution and orientation (4608x2592, no
-rotation, focus locked -- see the top-level README).
+Use a frame shot at the calibrated resolution and orientation (for the bundled
+IMX708 calibration: 4608x2592, no rotation, focus locked).
 """
 
 import argparse
@@ -23,7 +23,7 @@ import numpy as np
 
 from undistort_params import load_intrinsics, write_params
 
-DEFAULT_LIB = Path(__file__).resolve().parent.parent / "native/nvundistort/libnvundistort.so"
+DEFAULT_LIB = Path(__file__).resolve().parent.parent / "src/libnvundistort.so"
 DEFAULT_PLUGIN_DIR = DEFAULT_LIB.parent / "element"
 
 
@@ -39,7 +39,7 @@ def run_nv12(jpeg, out, lib=None, env=None):
 
 
 def run_element(jpeg, out, plugin_dir, params=None):
-    """Decode `jpeg` with nvv4l2decoder, as the pipeline does, optionally through
+    """Decode `jpeg` with nvv4l2decoder, as an MJPEG stream is, optionally through
     the nvundistort element, and write the raw NV12 frame to `out`."""
     elem = (f"nvundistort params-file={params} ! "
             "video/x-raw(memory:NVMM),format=NV12 ! ") if params else ""

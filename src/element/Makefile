@@ -1,8 +1,8 @@
 # Builds libgstnvundistort.so, the nvundistort GStreamer element, ON THE JETSON
 # (Orin = sm_87). Needs DeepStream and the GStreamer development packages.
 #
-#   make -C native/nvundistort/element
-#   GST_PLUGIN_PATH=$PWD/native/nvundistort/element gst-inspect-1.0 nvundistort
+#   make -C src/element
+#   GST_PLUGIN_PATH=$PWD/src/element gst-inspect-1.0 nvundistort
 #
 # Two compilers: nvcc for the CUDA side, g++ for the GStreamer side (nvcc and
 # the glib headers do not mix).

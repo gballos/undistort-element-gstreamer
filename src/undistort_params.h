@@ -1,5 +1,5 @@
 // undistort_params.h -- reads the `key value` parameter file written by
-// utils/undistort_params.py into the kernels' Params. Shared by every host
+// tools/undistort_params.py into the kernels' Params. Shared by every host
 // wrapper, like undistort_kernels.cuh.
 
 #pragma once

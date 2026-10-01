@@ -1,4 +1,4 @@
-# nvundistort params from imx708_intrinsics.npz, alpha=0.0. Regenerated on every pipeline build.
+# nvundistort params from imx708_intrinsics.npz, alpha=0.0.
 width 4608.0
 height 2592.0
 fx 1953.305641073659
