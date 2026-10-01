@@ -1,7 +1,8 @@
-// undistort_kernels.cuh -- the undistortion maths and the two NV12 remap kernels.
+// undistort_kernels.cuh -- the undistortion maths and the NV12 remap kernels.
 //
-// Shared by every host wrapper (today the nvivafilter library, nvundistort.cu),
-// so the model exists in one place. Kernels read the source frame through a
+// Shared by every host wrapper (the nvivafilter library, nvundistort.cu, and
+// the GStreamer element, element/undistort_engine.cu), so the model exists in
+// one place. Kernels read the source frame through a
 // texture (make_plane_texture) and write to `dst`, which must not be the memory
 // the texture reads: each output pixel reads neighbouring input pixels.
 
@@ -100,6 +101,29 @@ static __global__ void remap_uv(cudaTextureObject_t src, uint8_t* __restrict__ d
     const float2 c = tex2D<float2>(src, xs + 0.5f, ys + 0.5f);
     cu = to_byte(c.x);
     cv = to_byte(c.y);
+  }
+  uint8_t* o = dst + v * dst_pitch + 2 * u;
+  o[0] = cu;
+  o[1] = cv;
+}
+
+// As remap_uv, for an I420 source: U and V come from two one-channel textures
+// and are written as NV12's interleaved pairs.
+static __global__ void remap_uv_planar(cudaTextureObject_t src_u, cudaTextureObject_t src_v,
+                                       uint8_t* __restrict__ dst, int dst_pitch, Params p) {
+  const int cw = p.w >> 1, ch = p.h >> 1;
+  const int u = blockIdx.x * blockDim.x + threadIdx.x;
+  const int v = blockIdx.y * blockDim.y + threadIdx.y;
+  if (u >= cw || v >= ch) return;
+
+  float xs, ys;
+  src_coords(p, 2.f * u + 0.5f, 2.f * v + 0.5f, xs, ys);
+  xs = (xs - 0.5f) * 0.5f;
+  ys = (ys - 0.5f) * 0.5f;
+  uint8_t cu = 128, cv = 128;  // neutral chroma outside the source frame
+  if (inside(xs, ys, cw, ch)) {
+    cu = to_byte(tex2D<float>(src_u, xs + 0.5f, ys + 0.5f));
+    cv = to_byte(tex2D<float>(src_v, xs + 0.5f, ys + 0.5f));
   }
   uint8_t* o = dst + v * dst_pitch + 2 * u;
   o[0] = cu;
