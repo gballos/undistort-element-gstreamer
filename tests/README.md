@@ -1,13 +1,16 @@
 # Tests
 
-On-Jetson tests for `libnvundistort.so`. Run them from a Jetson (Orin) that has
-GStreamer with `nvivafilter`, plus `python3` with `opencv-python` and `numpy`.
+On-Jetson tests for the undistortion: the `nvundistort` element and the
+`nvivafilter` library `libnvundistort.so`. Run them from a Jetson (Orin) that
+has GStreamer with `nvivafilter`, DeepStream, plus `python3` with
+`opencv-python` and `numpy`.
 
-**Build the library first** (needs NVIDIA's `customer_functions.h` in
+**Build first** (the library needs NVIDIA's `customer_functions.h` in
 `native/nvundistort/include/`, see `../native/nvundistort/README.md`):
 
 ```bash
-make -C ../native/nvundistort      # from this tests/ dir
+make -C ../native/nvundistort           # library, from this tests/ dir
+make -C ../native/nvundistort/element   # element
 ```
 
 The calibration artifacts live at the repo root:
@@ -24,13 +27,17 @@ tcp://192.168.10.1:8881`.
 
 ## `check_undistort.py` — accuracy
 
-Runs one JPEG through `nvivafilter` + the library and compares against
-`cv2.remap`. PASS = mean absolute difference below 1 level on Y, U and V.
+Runs one JPEG through the undistortion and compares against `cv2.remap`.
+PASS = mean absolute difference below 1 level on Y, U and V.
 
 ```bash
 cd tests
-python3 check_undistort.py frame.jpg --npz ../imx708_intrinsics.npz --out-dir /tmp
+python3 check_undistort.py frame.jpg --npz ../imx708_intrinsics.npz --out-dir /tmp            # library
+python3 check_undistort.py frame.jpg --npz ../imx708_intrinsics.npz --out-dir /tmp --element  # element
 ```
+
+If `import cv2` fails with a NumPy 2 error, a user-installed NumPy is shadowing
+the system one: run with `PYTHONNOUSERSITE=1`.
 
 `frame.jpg` must be shot at the calibrated resolution and orientation. Outputs
 the raw NV12 frames and `/tmp/undistort_preview.jpg` (straight edges should be
@@ -52,7 +59,8 @@ coefficients 9–14).
 
 ## `bench_undistort.sh` — throughput (optional)
 
-Library A/B and per-element latency at default and pinned clocks, ~7 minutes.
+Library A/B and per-element latency (library and element) at default and
+pinned clocks, ~8 minutes. Needs `sudo` for `jetson_clocks`.
 It expects a **second** library to A/B against (default
 `../native/nvundistort/libnvundistort_manual.so`); pass your own as the first
 argument. With only one library built, use `check_undistort.py` and skip this.

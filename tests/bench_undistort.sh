@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Undistortion benchmark ON THE JETSON: library A/B and per-element latency,
-# at default and at pinned clocks. About 7 minutes.
+# Undistortion benchmark ON THE JETSON: library A/B and per-element latency
+# (nvivafilter library and nvundistort element), at default and at pinned
+# clocks. About 8 minutes.
 #
 #   tools/bench_undistort.sh [old_lib.so]    (default old lib: libnvundistort_manual.so)
 #
@@ -21,20 +22,24 @@ OLD=${1:-$LIBDIR/libnvundistort_manual.so}
 OUT=/tmp/bench_undistort
 SECS=${SECS:-25}
 export NVUNDISTORT_PARAMS=$PWD/imx708_intrinsics_nvundistort.txt
+export GST_PLUGIN_PATH=$LIBDIR/element${GST_PLUGIN_PATH:+:$GST_PLUGIN_PATH}
 mkdir -p "$OUT" && : > "$OUT/summary.txt"
-for f in "$NEW" "$OLD" "$NVUNDISTORT_PARAMS"; do
+for f in "$NEW" "$OLD" "$NVUNDISTORT_PARAMS" "$LIBDIR/element/libgstnvundistort.so"; do
   [ -f "$f" ] || { echo "missing $f" >&2; exit 1; }
 done
 
-# One run of the stream for $SECS seconds; $1 = filter library, or empty for none.
+# One run of the stream for $SECS seconds; $1 = filter library, empty for none,
+# or "element" for the nvundistort element (which takes the decoder's output
+# directly, without nvvidconv).
 stream() {
-  local filt=()
-  [ -n "$1" ] && filt=(! nvivafilter cuda-process=true "customer-lib-name=$1"
-                       ! 'video/x-raw(memory:NVMM),format=NV12')
+  local nv12='video/x-raw(memory:NVMM),format=NV12'
+  local filt=(! nvvidconv ! "$nv12")
+  [ -n "$1" ] && filt+=(! nvivafilter cuda-process=true "customer-lib-name=$1" ! "$nv12")
+  [ "$1" = element ] && filt=(! nvundistort "params-file=$NVUNDISTORT_PARAMS" ! "$nv12")
   sleep 4  # give the Pi's rpicam-vid loop time to restart after the last client
   timeout -s INT "$SECS" gst-launch-1.0 tcpclientsrc host=192.168.10.1 port=8881 ! jpegparse \
     ! nvv4l2decoder mjpeg=1 disable-dpb=true enable-max-performance=true \
-    ! nvvidconv ! 'video/x-raw(memory:NVMM),format=NV12' "${filt[@]}" ! fakesink sync=false
+    "${filt[@]}" ! fakesink sync=false
 }
 
 ab() {  # $1 = clock label
@@ -50,7 +55,7 @@ ab() {  # $1 = clock label
 }
 
 tracer() {  # $1 = clock label
-  for run in base: "off:$NEW" "full:$NEW"; do
+  for run in base: "off:$NEW" "full:$NEW" element:element; do
     name=${run%%:*}
     GST_TRACERS='latency(flags=element)' GST_DEBUG=GST_TRACER:7 \
       GST_DEBUG_FILE="$OUT/lat_$1_$name.log" NVUNDISTORT_MODE=$name stream "${run#*:}" >/dev/null 2>&1
